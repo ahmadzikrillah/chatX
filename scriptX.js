@@ -161,20 +161,21 @@ function findBestMatch(query) {
 }
 
 function searchInTopic(topic, query) {
-    let bestMatch = { score: 0, responseIndex: -1, patterns: [] }; // Inisialisasi patterns
+    let bestMatch = { score: 0, responseIndex: -1, patterns: [] };
     const topicData = dataset.topics[topic];
 
     for (const subtopic in topicData.subtopics) {
         for (const qna of topicData.subtopics[subtopic].QnA) {
             for (let i = 0; i < qna.patterns.length; i++) {
                 const score = calculateMatchScore(query, qna.patterns[i]);
+                console.log(`Membandingkan "<span class="math-inline">\{query\}" dengan "</span>{qna.patterns[i]}" - Skor: ${score}`); // Tambahkan log ini
                 if (score > bestMatch.score) {
                     bestMatch = {
                         score,
                         topic,
                         subtopic,
-                        patterns: qna.patterns, // Simpan seluruh array patterns
-                        response: qna.responses[i], // Pilih respons berdasarkan indeks
+                        patterns: qna.patterns,
+                        response: qna.responses[i],
                         diagram: qna.diagram || null,
                         responseIndex: i
                     };
