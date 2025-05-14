@@ -94,8 +94,7 @@ function normalizeText(text) {
     if (!text) return '';
     return text.toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^\w\s]/g, '')
-        .replace(/\b(apa|bagaimana|mengapa|tolong|jelaskan|yang dimaksud|itu|tentang|dengan|adalah|dari|sebutkan)\b/g, '')
+        .replace(/[^\w\s]/g, '')        
         .replace(/\s+/g, ' ')
         .trim();
 }
