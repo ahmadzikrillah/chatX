@@ -1,0 +1,305 @@
+// ================ [1] INITIALIZATION & CONFIG ================ //
+const CONFIG = {
+  MIN_MATCH_SCORE: 0.6,
+  CURRENT_TOPIC_BOOST: 1.3,
+  QUESTION_TYPE_BONUS: {
+    'apa': 1.2,
+    'bagaimana': 1.15,
+    'mengapa': 1.1
+  },
+  DEBOUNCE_TIME: 300,
+  RATE_LIMIT_TIME: 1000,
+  MAX_HISTORY: 50,
+  FALLBACK_IMAGE: 'images/default-guru.png'
+};
+
+let dataset = null;
+const sessionContext = {
+  currentTopic: null,
+  lastSubtopic: null,
+  conversationHistory: []
+};
+let debounceTimer;
+let lastMessageTime = 0;
+let isDatabaseLoading = false;
+
+// ================ [2] DATABASE HANDLING ================ //
+async function loadDatabase() {
+  if (dataset || isDatabaseLoading) return;
+  isDatabaseLoading = true;
+
+  try {
+    const response = await fetch('database.json');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    if (!validateDatabaseStructure(data)) {
+      throw new Error('Invalid database structure');
+    }
+    
+    dataset = data;
+    console.log("Database loaded successfully");
+  } catch (error) {
+    console.error("Database error:", error);
+    dataset = getFallbackDataset();
+    showDatabaseError();
+  } finally {
+    isDatabaseLoading = false;
+  }
+}
+
+function validateDatabaseStructure(data) {
+  return data && 
+         data.topics && 
+         typeof data.topics === 'object' &&
+         Object.values(data.topics).every(topic => 
+           topic.subtopics && typeof topic.subtopics === 'object'
+         );
+}
+
+// ... (getFallbackDataset dan showDatabaseError tetap sama)
+
+// ================ [3] TEXT PROCESSING UTILITIES ================ //
+function normalizeText(text) {
+  if (!text || typeof text !== 'string') return '';
+  
+  return text
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tokenize(text) {
+  const stopWords = new Set(['yang', 'di', 'ke', 'dari', 'dan']);
+  return normalizeText(text)
+    .split(' ')
+    .filter(word => word.length > 2 && !stopWords.has(word));
+}
+
+// ================ [4] MATCHING ENGINE ================ //
+function calculateMatchScore(query, pattern) {
+  const queryTokens = new Set(tokenize(query));
+  const patternTokens = new Set(tokenize(pattern));
+
+  const intersection = new Set([...queryTokens].filter(t => patternTokens.has(t)));
+  const union = new Set([...queryTokens, ...patternTokens]);
+  let score = intersection.size / union.size;
+
+  // Contextual boosting
+  if (sessionContext.currentTopic && pattern.includes(sessionContext.currentTopic)) {
+    score *= CONFIG.CURRENT_TOPIC_BOOST;
+  }
+
+  // Question type bonus
+  for (const [type, bonus] of Object.entries(CONFIG.QUESTION_TYPE_BONUS)) {
+    if (query.includes(type) && pattern.includes(type)) {
+      score *= bonus;
+      break;
+    }
+  }
+
+  return Math.min(score, 1.0);
+}
+
+// ... (findBestMatch dan searchInTopic tetap sama)
+
+// ================ [5] RESPONSE GENERATION ================ //
+async function formatResponse(match) {
+  if (!match) return generateFallbackResponse();
+
+  const typingIndicator = showTypingIndicator();
+  try {
+    let response;
+    switch (match.topic) {
+      case 'Profil Guru':
+        response = await formatTeacherProfileResponse(match);
+        break;
+      default:
+        response = await formatGeneralResponse(match);
+    }
+    return response;
+  } catch (error) {
+    console.error("Format error:", error);
+    return generateFallbackResponse();
+  } finally {
+    typingIndicator.remove();
+  }
+}
+
+// ... (formatTeacherProfileResponse dan formatGeneralResponse tetap sama)
+
+// ================ [6] CHAT INTERFACE ================ //
+function addMessage(content, isBot = true) {
+  try {
+    const chatbox = document.getElementById('chatbox');
+    if (!chatbox) throw new Error('Chatbox element not found');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isBot ? 'bot-message' : 'user-message'}`;
+    messageDiv.innerHTML = sanitizeHTML(content);
+    chatbox.appendChild(messageDiv);
+    chatbox.scrollTop = chatbox.scrollHeight;
+  } catch (error) {
+    console.error("Error adding message:", error);
+  }
+}
+
+function sanitizeHTML(html) {
+  const div = document.createElement('div');
+  div.textContent = html;
+  return div.innerHTML;
+}
+
+// ... (showTypingIndicator dan showWelcomeMessage tetap sama)
+
+// ================ [7] INPUT PROCESSING ================ //
+async function processUserInput() {
+  if (Date.now() - lastMessageTime < CONFIG.RATE_LIMIT_TIME) {
+    showRateLimitWarning();
+    return;
+  }
+  lastMessageTime = Date.now();
+
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(handleUserMessage, CONFIG.DEBOUNCE_TIME);
+}
+
+async function handleUserMessage() {
+  try {
+    const input = document.getElementById('userInput');
+    if (!input) throw new Error('Input element not found');
+
+    const userMessage = input.value.trim();
+    if (!userMessage) return;
+
+    addMessage(userMessage, false);
+    input.value = '';
+
+    if (!dataset && !isDatabaseLoading) {
+      await loadDatabase();
+    }
+
+    const match = findBestMatch(userMessage);
+    const response = await formatResponse(match);
+    addMessage(response, true);
+
+    updateSessionContext(match, userMessage, response);
+  } catch (error) {
+    console.error("Message handling error:", error);
+    addMessage(generateFallbackResponse(), true);
+  }
+}
+
+// ================ [8] SESSION MANAGEMENT ================ //
+function updateSessionContext(match, userMessage, response) {
+  if (match?.topic) {
+    sessionContext.currentTopic = match.topic;
+    sessionContext.lastSubtopic = match.subtopic;
+  }
+
+  sessionContext.conversationHistory.push({
+    query: userMessage,
+    response,
+    timestamp: new Date().toISOString()
+  });
+
+  if (sessionContext.conversationHistory.length > CONFIG.MAX_HISTORY) {
+    sessionContext.conversationHistory.shift();
+  }
+
+  saveConversation();
+}
+
+// ================ [9] PERSISTENCE ================ //
+function saveConversation() {
+  try {
+    localStorage.setItem('chatHistory', 
+      JSON.stringify(sessionContext.conversationHistory));
+  } catch (error) {
+    handleStorageError(error);
+  }
+}
+
+function handleStorageError(error) {
+  console.error("Storage error:", error);
+  if (error.name === 'QuotaExceededError') {
+    sessionContext.conversationHistory = [];
+  }
+}
+
+// ================ [10] FEEDBACK SYSTEM ================ //
+function handleFeedback(button, type) {
+  try {
+    const answerBox = button.closest('.answer-box');
+    if (!answerBox) return;
+
+    answerBox.querySelector('.feedback-buttons').innerHTML = 
+      `<span class="feedback-ack">${
+        type === 'up' ? '👍 Terima kasih!' : '🙏 Akan kami perbaiki'
+      }</span>`;
+
+    saveFeedback(answerBox, type);
+  } catch (error) {
+    console.error("Feedback error:", error);
+  }
+}
+
+// ================ [11] UTILITIES ================ //
+async function checkImageExists(url) {
+  if (!url) return false;
+  
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timer = setTimeout(() => resolve(false), 2000);
+    
+    img.onload = () => {
+      clearTimeout(timer);
+      resolve(true);
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      resolve(false);
+    };
+    img.src = url;
+  });
+}
+
+// ================ [12] INITIALIZATION ================ //
+function setupEventListeners() {
+  try {
+    const appContainer = document.getElementById('app') || document.body;
+    const userInput = document.getElementById('userInput');
+    const sendButton = document.getElementById('sendButton');
+
+    if (!userInput || !sendButton) {
+      throw new Error('Required elements not found');
+    }
+
+    appContainer.addEventListener('click', handleAppClick);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') processUserInput();
+    });
+    sendButton.addEventListener('click', processUserInput);
+  } catch (error) {
+    console.error("Setup error:", error);
+    showCriticalError();
+  }
+}
+
+async function initializeApp() {
+  try {
+    await loadDatabase();
+    setupEventListeners();
+    loadConversation();
+    showWelcomeMessage();
+  } catch (error) {
+    console.error("Initialization failed:", error);
+    showCriticalError();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(initializeApp, 100);
+});

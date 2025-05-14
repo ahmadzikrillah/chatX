@@ -1,0 +1,125 @@
+{
+    "topics": {
+        "Biologi": {
+            "subtopics": {
+                "Sel": {
+                    "QnA": [
+                        {
+                            "intent": "definition",
+                            "patterns": [
+                                "apa itu sel",
+                                "definisi sel",
+                                "jelaskan pengertian sel"
+                            ],
+                            "responses": [
+                                "Sel adalah unit terkecil penyusun makhluk hidup.",
+                                "Struktur dasar semua organisme hidup."
+                            ],
+                            "diagram": "images/sel.jpg"
+                        }
+                    ]
+                },
+                "Fotosintesis": {
+                    "QnA": [
+                        {
+                            "intent": "process",
+                            "patterns": [
+                                "bagaimana proses fotosintesis",
+                                "tahapan fotosintesis"
+                            ],
+                            "responses": [
+                                "Fotosintesis terjadi dalam 2 tahap: reaksi terang dan siklus Calvin.",
+                                "Proses: 1. Penyerapan cahaya 2. Konversi energi 3. Pembentukan glukosa"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "Fisika": {
+            "subtopics": {
+                "Gerak": {
+                    "QnA": [
+                        {
+                            "intent": "definition",
+                            "patterns": [
+                                "apa itu gerak",
+                                "definisi gerak"
+                            ],
+                            "responses": [
+                                "Gerak adalah perubahan posisi suatu benda terhadap titik acuan."
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "Profil Guru": {
+            "subtopics": {
+                "Informasi Umum": {
+                    "QnA": [
+                        {
+                            "intent": "information",
+                            "patterns": [
+                                "siapa guru biologi",
+                                "nama pengajar fisika"
+                            ],
+                            "responses": [
+                                "Guru Biologi: Ibu Siti, Guru Fisika: Pak Budi"
+                            ],
+                            "diagram": "images/guru.png"
+                        }
+                    ]
+                }
+            }
+        },
+        "Sapaan": {
+            "subtopics": {
+                "Umum": {
+                    "QnA": [
+                        {
+                            "intent": "greeting",
+                            "patterns": [
+                                "halo",
+                                "selamat pagi"
+                            ],
+                            "responses": [
+                                "Halo! Ada yang bisa saya bantu?",
+                                "Selamat pagi! Mari belajar IPA!"
+                            ]
+                        },
+                        {
+                            "intent": "islamic_greeting",
+                            "patterns": [
+                                "assalamualaikum",
+                                "salam"
+                            ],
+                            "responses": [
+                                "Waalaikumsalam",
+                                "Waalaikumsalam warahmatullahi wabarakatuh"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "Saran": {
+            "subtopics": {
+                "Belajar": {
+                    "QnA": [
+                        {
+                            "intent": "suggestion",
+                            "patterns": [
+                                "tips belajar ipa",
+                                "cara memahami biologi"
+                            ],
+                            "responses": [
+                                "Tips: 1. Buat catatan ringkas 2. Pelajari konsep dasar 3. Latihan soal"
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
