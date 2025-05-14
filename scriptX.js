@@ -168,7 +168,7 @@ function searchInTopic(topic, query) {
         for (const qna of topicData.subtopics[subtopic].QnA) {
             for (let i = 0; i < qna.patterns.length; i++) {
                 const score = calculateMatchScore(query, qna.patterns[i]);
-                console.log(`Membandingkan "<span class="math-inline">\{query\}" dengan "</span>{qna.patterns[i]}" - Skor: ${score}`); // Tambahkan log ini
+                console.log(`Membandingkan "${query}" dengan "${qna.patterns[i]}" - Skor: ${score}`);
                 if (score > bestMatch.score) {
                     bestMatch = {
                         score,
