@@ -143,14 +143,19 @@ function findBestMatch(query) {
     const normalizedQuery = normalizeText(query);
     let bestMatch = { score: 0 };
 
+    // Log untuk melihat topik yang sedang diperiksa
+    console.log(`[DEBUG findBestMatch] Memulai pencarian untuk query: "${query}"`);
+
     // Search in current topic first if exists
     if (sessionContext.currentTopic && dataset.topics[sessionContext.currentTopic]) {
+        console.log(`[DEBUG findBestMatch] Mencari di topik saat ini: "${sessionContext.currentTopic}"`);
         bestMatch = searchInTopic(sessionContext.currentTopic, normalizedQuery);
         if (bestMatch.score > 0.7) return bestMatch;
     }
 
     // Global search if no good match in current topic
     for (const topic in dataset.topics) {
+        console.log(`[DEBUG findBestMatch] Memeriksa topik: "${topic}"`); // Log topik
         const topicMatch = searchInTopic(topic, normalizedQuery);
         if (topicMatch.score > bestMatch.score) {
             bestMatch = topicMatch;
@@ -165,10 +170,11 @@ function searchInTopic(topic, query) {
     const topicData = dataset.topics[topic];
 
     for (const subtopic in topicData.subtopics) {
+        console.log(`[DEBUG searchInTopic] Memeriksa subtopik: "${topic} - ${subtopic}"`); // Log subtopik
         for (const qna of topicData.subtopics[subtopic].QnA) {
             for (let i = 0; i < qna.patterns.length; i++) {
                 const score = calculateMatchScore(query, qna.patterns[i]);
-                console.log(`Membandingkan "${query}" dengan "${qna.patterns[i]}" - Skor: ${score}`);
+                console.log(`Membandingkan "<span class="math-inline">\{query\}" dengan "</span>{qna.patterns[i]}" - Skor: ${score}`);
                 if (score > bestMatch.score) {
                     bestMatch = {
                         score,
